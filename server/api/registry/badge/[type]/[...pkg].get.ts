@@ -49,12 +49,27 @@ let cachedCanvasContext: SKRSContext2D | null | undefined
 
 function getCanvasContext(): SKRSContext2D | null {
   if (cachedCanvasContext !== undefined) {
+    console.log(
+      `[badge] getCanvasContext: returning cached context (available: ${cachedCanvasContext !== null})`,
+    )
     return cachedCanvasContext
   }
 
   try {
-    cachedCanvasContext = createCanvas(1, 1).getContext('2d')
-  } catch {
+    console.log('[badge] getCanvasContext: attempting to create canvas...')
+    const canvas = createCanvas(1, 1)
+    console.log('[badge] getCanvasContext: canvas created successfully')
+    cachedCanvasContext = canvas.getContext('2d')
+    console.log(`[badge] getCanvasContext: context obtained (type: ${typeof cachedCanvasContext})`)
+  } catch (error) {
+    console.error(
+      '[badge] getCanvasContext: canvas creation FAILED:',
+      error instanceof Error ? error.message : error,
+    )
+    console.error(
+      '[badge] getCanvasContext: error stack:',
+      error instanceof Error ? error.stack : 'N/A',
+    )
     cachedCanvasContext = null
   }
 
@@ -66,12 +81,30 @@ function measureTextWidth(text: string, font: string): number | null {
 
   if (context) {
     context.font = font
+    console.log(`[badge] measureTextWidth: measuring "${text}" with font "${font}"`)
 
-    const measuredWidth = context.measureText(text).width
+    try {
+      const metrics = context.measureText(text)
+      const measuredWidth = metrics.width
+      console.log(
+        `[badge] measureTextWidth: raw width = ${measuredWidth}, isFinite = ${Number.isFinite(measuredWidth)}`,
+      )
 
-    if (Number.isFinite(measuredWidth) && measuredWidth > 0) {
-      return Math.ceil(measuredWidth)
+      if (Number.isFinite(measuredWidth) && measuredWidth > 0) {
+        const result = Math.ceil(measuredWidth)
+        console.log(`[badge] measureTextWidth: returning ${result}`)
+        return result
+      }
+
+      console.warn(`[badge] measureTextWidth: invalid measurement for "${text}": ${measuredWidth}`)
+    } catch (error) {
+      console.error(
+        `[badge] measureTextWidth: measureText() threw for "${text}":`,
+        error instanceof Error ? error.message : error,
+      )
     }
+  } else {
+    console.warn(`[badge] measureTextWidth: no canvas context available, falling back`)
   }
 
   return null
