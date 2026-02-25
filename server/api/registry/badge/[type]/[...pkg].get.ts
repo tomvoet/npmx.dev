@@ -114,20 +114,34 @@ function measureDefaultTextWidth(text: string): number {
   const measuredWidth = measureTextWidth(text, BADGE_FONT_SHORTHAND)
 
   if (measuredWidth !== null) {
-    return Math.max(MIN_BADGE_TEXT_WIDTH, measuredWidth + BADGE_PADDING_X * 2)
+    const result = Math.max(MIN_BADGE_TEXT_WIDTH, measuredWidth + BADGE_PADDING_X * 2)
+    console.log(`[badge] measureDefaultTextWidth: canvas result for "${text}" = ${result}`)
+    return result
   }
 
-  return Math.max(MIN_BADGE_TEXT_WIDTH, Math.round(text.length * CHAR_WIDTH) + BADGE_PADDING_X * 2)
+  const fallback = Math.max(
+    MIN_BADGE_TEXT_WIDTH,
+    Math.round(text.length * CHAR_WIDTH) + BADGE_PADDING_X * 2,
+  )
+  console.warn(
+    `[badge] measureDefaultTextWidth: FALLBACK for "${text}" = ${fallback} (${text.length} chars * ${CHAR_WIDTH})`,
+  )
+  return fallback
 }
 
 function measureShieldsTextLength(text: string): number {
   const measuredWidth = measureTextWidth(text, SHIELDS_FONT_SHORTHAND)
 
   if (measuredWidth !== null) {
+    console.log(`[badge] measureShieldsTextLength: canvas result for "${text}" = ${measuredWidth}`)
     return Math.max(1, measuredWidth)
   }
 
-  return Math.max(1, Math.round(text.length * SHIELDS_CHAR_WIDTH))
+  const fallback = Math.max(1, Math.round(text.length * SHIELDS_CHAR_WIDTH))
+  console.warn(
+    `[badge] measureShieldsTextLength: FALLBACK for "${text}" = ${fallback} (${text.length} chars * ${SHIELDS_CHAR_WIDTH})`,
+  )
+  return fallback
 }
 
 function renderDefaultBadgeSvg(params: {
@@ -141,6 +155,10 @@ function renderDefaultBadgeSvg(params: {
   const rightWidth = measureDefaultTextWidth(finalValue)
   const totalWidth = leftWidth + rightWidth
   const height = 20
+
+  console.log(
+    `[badge] renderDefaultBadgeSvg: label="${finalLabel}" (w=${leftWidth}), value="${finalValue}" (w=${rightWidth}), total=${totalWidth}`,
+  )
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${height}" role="img" aria-label="${finalLabel}: ${finalValue}">
@@ -180,6 +198,10 @@ function renderShieldsBadgeSvg(params: {
   const rightCenter = Math.round((leftWidth + rightWidth / 2) * 10)
   const leftTextLengthAttr = leftTextLength * 10
   const rightTextLengthAttr = rightTextLength * 10
+
+  console.log(
+    `[badge] renderShieldsBadgeSvg: label="${finalLabel}" (textLen=${leftTextLength}, w=${leftWidth}), value="${finalValue}" (textLen=${rightTextLength}, w=${rightWidth}), total=${totalWidth}`,
+  )
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${height}" role="img" aria-label="${title}">
@@ -463,8 +485,14 @@ export default defineCachedEventHandler(
       const rawLabelColor = labelColor ?? defaultLabelColor
       const finalLabelColor = rawLabelColor.startsWith('#') ? rawLabelColor : `#${rawLabelColor}`
 
+      console.log(
+        `[badge] handler: type="${strategyKey}", pkg="${packageName}", style="${badgeStyle}", label="${finalLabel}", value="${finalValue}"`,
+      )
+
       const renderFn = badgeStyle === 'shieldsio' ? renderShieldsBadgeSvg : renderDefaultBadgeSvg
       const svg = renderFn({ finalColor, finalLabel, finalLabelColor, finalValue })
+
+      console.log(`[badge] handler: SVG generated successfully (${svg.length} chars)`)
 
       setHeader(event, 'Content-Type', 'image/svg+xml')
       setHeader(
